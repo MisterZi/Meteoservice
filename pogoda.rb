@@ -1,38 +1,23 @@
-require 'net/http'
-require 'uri'
-require 'rexml/document'
-require 'date'
 
-# http://export.yandex.ru/weather-ng/forecasts/26063.xml
+require_relative 'meteoservice.rb'
 
-uri = URI.parse('http://xml.meteoservice.ru/export/gismeteo/point/69.xml')
+current_path = File.dirname(__FILE__)
+file_name = current_path + '/city_list.xml'
 
-response = Net::HTTP.get_response(uri)
-# исключения!!
 
-doc = REXML::Document.new(response.body)
+puts 'Введите название города:'
+city_name = STDIN.gets.chomp
 
-city_name = doc.root.elements['REPORT/TOWN'].attributes['sname']
+file = File.new(file_name, 'r:utf-8')
+city_id = Meteoservice.get_city_id(file, city_name)
+file.close
 
-doc.root.elements.each('REPORT/TOWN/FORECAST') do |forecast|
-  date_str = forecast.attributes['day'] + '.' +
-             forecast.attributes['month'] + '.' +
-             forecast.attributes['year']
-  date = Date.parse(date_str)
-  time = forecast.attributes['hour']
-  temperature = forecast.elements['TEMPERATURE'].attributes['max']
-  wind = forecast.elements['WIND'].attributes['max']
-  phenomena = forecast.elements['PHENOMENA'].attributes['cloudiness'].to_i
-  cloudiness = ''
 
-  case phenomena
-    when 0 then cloudiness = 'ясно'
-    when 1 then cloudiness = 'малооблачно'
-    when 2 then cloudiness = 'облачно'
-    when 3 then cloudiness = 'пасмурно'
-  end
+meteoservice = Meteoservice.new
+meteoservice.take_data(city_id)
+meteoservice.show_weather
 
-  puts
-  puts "Погода в городе #{city_name} на #{time} час #{date.strftime('%d-%m-%Y')}:"
-  puts "#{temperature} градусов, #{cloudiness}, ветер #{wind} м/с"
-end
+
+
+
+
